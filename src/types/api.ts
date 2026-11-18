@@ -260,6 +260,12 @@ export interface ConsultaIaResponse {
   tokensUtilizados?: number;
   tiempoRespuestaMs?: number;
   sessionId?: string;
+  // Inciso 9: Metadatos de uso y costo
+  tokensEntrada?: number;
+  tokensSalida?: number;
+  tokensTotales?: number;
+  costoUsd?: number;
+  modelo?: string;
 }
 
 export interface PaginatedResult<T> {
