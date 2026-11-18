@@ -61,26 +61,53 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
     setInput('');
     setCargando(true);
 
-    try {
-      const res = await api.consultarIa(consulta, sessionId);
-      const idJose = 'jose-' + Date.now();
-      const nuevoMensajeJose: MensajeChat = {
+    const idJose = 'jose-' + Date.now();
+    let textoStreaming = '';
+
+    setMensajes((prev) => [
+      ...prev,
+      {
         id: idJose,
         remitente: 'jose',
-        texto: res.respuesta,
-        fuentes: res.fuentes,
-        tiempoMs: res.tiempoRespuestaMs,
-      };
-      setMensajes((prev) => [...prev, nuevoMensajeJose]);
-    } catch (err: any) {
-      setMensajes((prev) => [
-        ...prev,
-        {
-          id: 'err-' + Date.now(),
-          remitente: 'jose',
-          texto: err?.detail || err?.message || 'Lo siento, no pude conectar con el servicio de IA en este momento. Por favor intenta de nuevo.',
+        texto: '',
+      },
+    ]);
+
+    try {
+      const res = await api.consultarIaStream(
+        consulta,
+        (chunk) => {
+          textoStreaming += chunk;
+          setMensajes((prev) =>
+            prev.map((m) => (m.id === idJose ? { ...m, texto: textoStreaming } : m))
+          );
         },
-      ]);
+        sessionId
+      );
+
+      setMensajes((prev) =>
+        prev.map((m) =>
+          m.id === idJose
+            ? {
+                ...m,
+                texto: res.respuesta,
+                fuentes: res.fuentes,
+                tiempoMs: res.tiempoRespuestaMs,
+              }
+            : m
+        )
+      );
+    } catch (err: any) {
+      setMensajes((prev) =>
+        prev.map((m) =>
+          m.id === idJose
+            ? {
+                ...m,
+                texto: err?.detail || err?.message || 'Lo siento, no pude conectar con el servicio de IA en este momento.',
+              }
+            : m
+        )
+      );
     } finally {
       setCargando(false);
     }
@@ -174,6 +201,9 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                   whiteSpace: 'pre-line'
                 }}>
                   {m.texto}
+                  {!isUser && cargando && m.id === mensajes[mensajes.length - 1]?.id && (
+                    <span style={{ color: 'var(--accent-vermilion)', fontWeight: 900, marginLeft: '2px', display: 'inline-block' }}>▊</span>
+                  )}
                 </div>
 
                 {/* Citaciones RAG */}
