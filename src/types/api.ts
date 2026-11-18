@@ -264,6 +264,8 @@ export interface FuenteCitada {
   pagina?: number;
   extracto: string;
   chunkId?: number;
+  esHerramienta?: boolean;
+  herramientaNombre?: string;
 }
 
 export interface ConsultaIaResponse {
@@ -272,6 +274,12 @@ export interface ConsultaIaResponse {
   tokensUtilizados?: number;
   tiempoRespuestaMs?: number;
   sessionId?: string;
+  herramientaEjecutada?: string;
+  tokensEntrada?: number;
+  tokensSalida?: number;
+  tokensTotales?: number;
+  costoUsd?: number;
+  modelo?: string;
 }
 
 export interface PaginatedResult<T> {
