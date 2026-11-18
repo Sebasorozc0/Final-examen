@@ -39,6 +39,18 @@ export interface ProblemDetails {
   code?: string;
 }
 
+export interface EventoDestacadoDto {
+  id: number;
+  titulo: string;
+  categoria: string;
+  recinto: string;
+  ciudad: string;
+  precioMinimo: number;
+  cupoDisponible: number;
+  fechaInicio: string;
+  imagenFlyerUrl?: string;
+}
+
 export interface CategoriaPublica {
   id: number;
   nombre: string;
@@ -252,6 +264,8 @@ export interface FuenteCitada {
   pagina?: number;
   extracto: string;
   chunkId?: number;
+  esHerramienta?: boolean;
+  herramientaNombre?: string;
 }
 
 export interface ConsultaIaResponse {
@@ -260,7 +274,7 @@ export interface ConsultaIaResponse {
   tokensUtilizados?: number;
   tiempoRespuestaMs?: number;
   sessionId?: string;
-  // Inciso 9: Metadatos de uso y costo
+  herramientaEjecutada?: string;
   tokensEntrada?: number;
   tokensSalida?: number;
   tokensTotales?: number;

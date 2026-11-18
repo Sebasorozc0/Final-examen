@@ -25,11 +25,6 @@ interface MensajeChat {
   texto: string;
   fuentes?: FuenteCitada[];
   tiempoMs?: number;
-  tokensEntrada?: number;
-  tokensSalida?: number;
-  tokensTotales?: number;
-  costoUsd?: number;
-  modelo?: string;
 }
 
 export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
@@ -75,11 +70,6 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
         texto: res.respuesta,
         fuentes: res.fuentes,
         tiempoMs: res.tiempoRespuestaMs,
-        tokensEntrada: res.tokensEntrada,
-        tokensSalida: res.tokensSalida,
-        tokensTotales: res.tokensTotales,
-        costoUsd: res.costoUsd,
-        modelo: res.modelo,
       };
       setMensajes((prev) => [...prev, nuevoMensajeJose]);
     } catch (err: any) {
@@ -185,39 +175,6 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                 }}>
                   {m.texto}
                 </div>
-
-                {/* Inciso 9: Metadatos de Tokens y Costo Estimado en USD */}
-                {!isUser && m.tokensTotales !== undefined && m.tokensTotales > 0 && (
-                  <div style={{
-                    marginTop: '8px',
-                    padding: '8px 12px',
-                    backgroundColor: 'var(--bg-canvas)',
-                    border: '1.5px solid var(--border-medium)',
-                    boxShadow: 'var(--shadow-crisp-sm)',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '8px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.72rem',
-                  }}>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Tokens: </span>
-                      <strong>{m.tokensTotales}</strong>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}> ({m.tokensEntrada} prompt / {m.tokensSalida} completion)</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Costo: </span>
-                        <strong style={{ color: 'var(--accent-emerald)' }}>${(m.costoUsd || 0).toFixed(6)} USD</strong>
-                      </div>
-                      <span className="badge" style={{ fontSize: '0.62rem', padding: '1px 5px', backgroundColor: 'var(--bg-surface)' }}>
-                        {m.modelo || 'gpt-oss:120b'}
-                      </span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Citaciones RAG */}
                 {m.fuentes && m.fuentes.length > 0 && (
