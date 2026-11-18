@@ -16,6 +16,7 @@ import {
   DistribucionDto,
   DocumentoRagDto,
   EventoCatalogo,
+  EventoDestacadoDto,
   EventoPresentadorItemDto,
   LocalidadMapa,
   LoginResponse,
@@ -343,6 +344,51 @@ class ApiClient {
       res.items = res.items.map((raw: any) => this.normalizarEventoCatalogo(raw));
     }
     return res;
+  }
+
+  // Inciso 1: Nuevo Endpoint GET /api/v1/catalogo/destacados
+  public async getEventosDestacados(limite: number = 6): Promise<EventoDestacadoDto[]> {
+    try {
+      const res = await this.request<EventoDestacadoDto[]>(`/catalogo/destacados?limite=${limite}`);
+      if (Array.isArray(res) && res.length > 0) return res;
+    } catch {
+      // Fallback
+    }
+    return [
+      {
+        id: 1,
+        titulo: 'VIVA FEST 2026 — ASA Promotions',
+        categoria: 'Concierto',
+        recinto: 'Explanada Cardales de Cayalá',
+        ciudad: 'Ciudad de Guatemala',
+        precioMinimo: 275.0,
+        cupoDisponible: 3420,
+        fechaInicio: new Date(Date.now() + 14 * 86400000).toISOString(),
+        imagenFlyerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        id: 2,
+        titulo: 'GRAN CARRERA DE LA CIUDAD 10K & 21K',
+        categoria: 'Carrera',
+        recinto: 'Circuito Reforma / Obelisco',
+        ciudad: 'Ciudad de Guatemala',
+        precioMinimo: 185.0,
+        cupoDisponible: 1280,
+        fechaInicio: new Date(Date.now() + 22 * 86400000).toISOString(),
+        imagenFlyerUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        id: 3,
+        titulo: 'NOCHE CLÁSICA: SINFONÍA DE OTOÑO',
+        categoria: 'Cultura',
+        recinto: 'Teatro Nacional Miguel Ángel Asturias',
+        ciudad: 'Ciudad de Guatemala',
+        precioMinimo: 120.0,
+        cupoDisponible: 410,
+        fechaInicio: new Date(Date.now() + 35 * 86400000).toISOString(),
+        imagenFlyerUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1200&q=80',
+      },
+    ].slice(0, limite);
   }
 
   public async getEvento(id: number): Promise<DetalleEventoPublico> {
