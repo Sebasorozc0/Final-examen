@@ -56,3 +56,4 @@ public sealed class ConsultasIaStreamingController : ApiControllerBase
         await Response.Body.FlushAsync(ct);
     }
 }
+
