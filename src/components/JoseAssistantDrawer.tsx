@@ -25,6 +25,12 @@ interface MensajeChat {
   texto: string;
   fuentes?: FuenteCitada[];
   tiempoMs?: number;
+  herramientaEjecutada?: string;
+  tokensEntrada?: number;
+  tokensSalida?: number;
+  tokensTotales?: number;
+  costoUsd?: number;
+  modelo?: string;
 }
 
 export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
@@ -70,6 +76,12 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
         texto: res.respuesta,
         fuentes: res.fuentes,
         tiempoMs: res.tiempoRespuestaMs,
+        herramientaEjecutada: res.herramientaEjecutada,
+        tokensEntrada: res.tokensEntrada,
+        tokensSalida: res.tokensSalida,
+        tokensTotales: res.tokensTotales,
+        costoUsd: res.costoUsd,
+        modelo: res.modelo,
       };
       setMensajes((prev) => [...prev, nuevoMensajeJose]);
     } catch (err: any) {
@@ -91,6 +103,7 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
   };
 
   const sugerencias = [
+    '¿Qué capacidad y cupos disponibles tiene el recinto Explanada Cayalá?',
     '¿Qué eventos están confirmados este mes?',
     '¿Cuáles son las políticas de reembolso y cancelación?',
     '¿Cómo funciona la validación del código QR en puerta?',
@@ -175,6 +188,24 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                 }}>
                   {m.texto}
                 </div>
+
+                {m.herramientaEjecutada && (
+                  <div style={{
+                    marginTop: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: 'var(--accent-cobalt-soft)',
+                    border: '1.5px solid var(--accent-cobalt)',
+                    color: 'var(--accent-cobalt)',
+                    padding: '3px 8px',
+                    fontSize: '0.72rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                  }}>
+                    <span>🔧 Tool Ejecutada: {m.herramientaEjecutada}</span>
+                  </div>
+                )}
 
                 {/* Citaciones RAG */}
                 {m.fuentes && m.fuentes.length > 0 && (
