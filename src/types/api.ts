@@ -39,6 +39,18 @@ export interface ProblemDetails {
   code?: string;
 }
 
+export interface EventoDestacadoDto {
+  id: number;
+  titulo: string;
+  categoria: string;
+  recinto: string;
+  ciudad: string;
+  precioMinimo: number;
+  cupoDisponible: number;
+  fechaInicio: string;
+  imagenFlyerUrl?: string;
+}
+
 export interface CategoriaPublica {
   id: number;
   nombre: string;
