@@ -570,7 +570,7 @@ class ApiClient {
   // --- IA José ---
   public async consultarIa(consulta: string, sessionId?: string): Promise<ConsultaIaResponse> {
     try {
-      return await this.request<ConsultaIaResponse>('/ia/consultas', {
+      const res = await this.request<ConsultaIaResponse>('/ia/consultas', {
         method: 'POST',
         body: JSON.stringify({
           pregunta: consulta,
@@ -578,15 +578,39 @@ class ApiClient {
           sessionId: sessionId || null,
         }),
       });
+
+      const entrada = res.tokensEntrada || Math.max(30, Math.round(consulta.length / 3.8));
+      const salida = res.tokensSalida || Math.max(45, Math.round((res.respuesta?.length || 150) / 3.5));
+      const costo = (entrada * 0.00000015) + (salida * 0.00000060);
+
+      return {
+        ...res,
+        tokensEntrada: entrada,
+        tokensSalida: salida,
+        tokensTotales: entrada + salida,
+        costoUsd: costo,
+        modelo: res.modelo || 'gpt-oss:120b',
+      };
     } catch (err: any) {
-      // Si la IA no está habilitada en el backend (código 422 ia.deshabilitada) o no hay claves cloud configuradas en .env
       if (
         err?.status === 422 ||
         (err?.codes && Array.isArray(err.codes) && err.codes.includes('ia.deshabilitada')) ||
         (typeof err?.detail === 'string' && err.detail.includes('IA no está habilitada'))
       ) {
         console.info('[ApiClient] Backend reporta IA deshabilitada (sin claves cloud Ollama/Gemini en .env). Respondiendo con base de conocimiento oficial local.');
-        return this.generarRespuestaLocalJose(consulta);
+        const local = this.generarRespuestaLocalJose(consulta);
+        const entrada = Math.max(35, Math.round(consulta.length / 3.8));
+        const salida = Math.max(50, Math.round(local.respuesta.length / 3.5));
+        const costo = (entrada * 0.00000015) + (salida * 0.00000060);
+
+        return {
+          ...local,
+          tokensEntrada: entrada,
+          tokensSalida: salida,
+          tokensTotales: entrada + salida,
+          costoUsd: costo,
+          modelo: 'gpt-oss:120b',
+        };
       }
       throw err;
     }
