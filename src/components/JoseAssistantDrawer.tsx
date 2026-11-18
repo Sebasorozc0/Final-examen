@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
-import { ConsultaIaResponse, FuenteCitada } from '../types/api';
+import { FuenteCitada } from '../types/api';
 import { 
   X, 
   Send, 
@@ -9,9 +9,7 @@ import {
   ChevronDown, 
   ChevronUp, 
   Loader2, 
-  ShieldCheck, 
-  Bot,
-  User
+  ShieldCheck,
 } from 'lucide-react';
 
 interface JoseAssistantDrawerProps {
@@ -19,12 +17,19 @@ interface JoseAssistantDrawerProps {
   onClose: () => void;
 }
 
+// Inciso 9: MensajeChat incluye campos de tokens, costo y modelo
 interface MensajeChat {
   id: string;
   remitente: 'usuario' | 'jose';
   texto: string;
   fuentes?: FuenteCitada[];
   tiempoMs?: number;
+  herramientaEjecutada?: string;
+  tokensEntrada?: number;
+  tokensSalida?: number;
+  tokensTotales?: number;
+  costoUsd?: number;
+  modelo?: string;
 }
 
 export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
@@ -46,41 +51,62 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
 
   if (!isOpen) return null;
 
+  // Inciso 6: handleEnviar usa streaming SSE con cursor progresivo
   const handleEnviar = async (textoAEnviar?: string) => {
     const consulta = (textoAEnviar || input).trim();
     if (!consulta || cargando) return;
 
     const idUsuario = 'msg-' + Date.now();
-    const nuevoMensajeUsuario: MensajeChat = {
-      id: idUsuario,
-      remitente: 'usuario',
-      texto: consulta,
-    };
-
-    setMensajes((prev) => [...prev, nuevoMensajeUsuario]);
+    setMensajes((prev) => [...prev, { id: idUsuario, remitente: 'usuario', texto: consulta }]);
     setInput('');
     setCargando(true);
 
+    // Inciso 6: crear placeholder vacío para el streaming en tiempo real
+    const idJose = 'jose-' + Date.now();
+    setMensajes((prev) => [...prev, { id: idJose, remitente: 'jose', texto: '' }]);
+
     try {
-      const res = await api.consultarIa(consulta, sessionId);
-      const idJose = 'jose-' + Date.now();
-      const nuevoMensajeJose: MensajeChat = {
-        id: idJose,
-        remitente: 'jose',
-        texto: res.respuesta,
-        fuentes: res.fuentes,
-        tiempoMs: res.tiempoRespuestaMs,
-      };
-      setMensajes((prev) => [...prev, nuevoMensajeJose]);
-    } catch (err: any) {
-      setMensajes((prev) => [
-        ...prev,
-        {
-          id: 'err-' + Date.now(),
-          remitente: 'jose',
-          texto: err?.detail || err?.message || 'Lo siento, no pude conectar con el servicio de IA en este momento. Por favor intenta de nuevo.',
+      // Inciso 6: consultarIaStream emite chunks progresivos palabra por palabra
+      const res = await api.consultarIaStream(
+        consulta,
+        (chunk) => {
+          setMensajes((prev) =>
+            prev.map((m) => (m.id === idJose ? { ...m, texto: m.texto + chunk } : m))
+          );
         },
-      ]);
+        sessionId
+      );
+
+      // Inciso 2 + 9: actualizar con metadata completa (tool badge, fuentes, tokens, costo)
+      setMensajes((prev) =>
+        prev.map((m) =>
+          m.id === idJose
+            ? {
+                ...m,
+                texto: res.respuesta,
+                fuentes: res.fuentes,
+                tiempoMs: res.tiempoRespuestaMs,
+                herramientaEjecutada: res.herramientaEjecutada,
+                tokensEntrada: res.tokensEntrada,
+                tokensSalida: res.tokensSalida,
+                tokensTotales: res.tokensTotales,
+                costoUsd: res.costoUsd,
+                modelo: res.modelo,
+              }
+            : m
+        )
+      );
+    } catch (err: any) {
+      setMensajes((prev) =>
+        prev.map((m) =>
+          m.id === idJose
+            ? {
+                ...m,
+                texto: err?.detail || err?.message || 'Lo siento, no pude conectar con el servicio de IA en este momento.',
+              }
+            : m
+        )
+      );
     } finally {
       setCargando(false);
     }
@@ -91,6 +117,7 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
   };
 
   const sugerencias = [
+    '¿Qué capacidad y cupos disponibles tiene el recinto Explanada Cayalá?',
     '¿Qué eventos están confirmados este mes?',
     '¿Cuáles son las políticas de reembolso y cancelación?',
     '¿Cómo funciona la validación del código QR en puerta?',
@@ -132,25 +159,43 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                 <span style={{ width: '8px', height: '8px', backgroundColor: '#10B981', borderRadius: '50%' }} />
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                RAG Oficial · Respuestas con Citación
+                RAG Oficial · Respaldado en Documentos
               </div>
             </div>
           </div>
-
-          <button onClick={onClose} className="btn btn-sm btn-outline" style={{ padding: '6px 8px' }}>
+          <button 
+            onClick={onClose}
+            className="btn btn-sm btn-outline"
+            style={{ padding: '6px 8px' }}
+          >
             <X size={18} />
           </button>
         </div>
 
-        {/* Message Thread */}
+        {/* Info Banner */}
+        <div style={{
+          padding: '8px 16px',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-medium)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.72rem',
+          color: 'var(--text-secondary)'
+        }}>
+          <ShieldCheck size={14} color="#10B981" />
+          <span>Información pública verificada con citación de fuentes</span>
+        </div>
+
+        {/* Chat History */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
           padding: '20px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
-          backgroundColor: '#FAF9F5'
+          gap: '16px'
         }}>
           {mensajes.map((m) => {
             const isUser = m.remitente === 'usuario';
@@ -162,6 +207,7 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                   maxWidth: '88%',
                 }}
               >
+                {/* Burbuja de mensaje */}
                 <div style={{
                   padding: '14px 16px',
                   backgroundColor: isUser ? 'var(--bg-inverse)' : '#FFF',
@@ -174,7 +220,30 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                   whiteSpace: 'pre-line'
                 }}>
                   {m.texto}
+                  {/* Inciso 6: cursor de streaming parpadeante */}
+                  {!isUser && cargando && m.id === mensajes[mensajes.length - 1]?.id && (
+                    <span style={{ color: 'var(--accent-vermilion)', fontWeight: 900, marginLeft: '2px', display: 'inline-block' }}>▊</span>
+                  )}
                 </div>
+
+                {/* Inciso 2: Badge de Tool ejecutada */}
+                {m.herramientaEjecutada && (
+                  <div style={{
+                    marginTop: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: '#EFF6FF',
+                    border: '1.5px solid #3B82F6',
+                    color: '#1D4ED8',
+                    padding: '4px 10px',
+                    fontSize: '0.72rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                  }}>
+                    <span>🔧 Tool Ejecutada: {m.herramientaEjecutada}</span>
+                  </div>
+                )}
 
                 {/* Citaciones RAG */}
                 {m.fuentes && m.fuentes.length > 0 && (
@@ -189,7 +258,7 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                         border: 'none',
                         fontFamily: 'var(--font-mono)',
                         fontSize: '0.72rem',
-                        color: 'var(--accent-cobalt)',
+                        color: '#1D4ED8',
                         fontWeight: 700,
                         cursor: 'pointer',
                         padding: '2px 4px'
@@ -226,6 +295,49 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
                     )}
                   </div>
                 )}
+
+                {/* Inciso 9: Métricas de Tokens, Costo y Modelo */}
+                {!isUser && (m.tokensTotales !== undefined || m.tiempoMs !== undefined) && (
+                  <div style={{
+                    marginTop: '6px',
+                    padding: '6px 10px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.68rem',
+                    color: '#64748B',
+                  }}>
+                    {m.tiempoMs !== undefined && (
+                      <span>⚡ {m.tiempoMs}ms</span>
+                    )}
+                    {m.tokensTotales !== undefined && (
+                      <span>
+                        📊 Tokens: <strong style={{ color: '#1E293B' }}>{m.tokensTotales}</strong>
+                        <span style={{ opacity: 0.7 }}> (in: {m.tokensEntrada} / out: {m.tokensSalida})</span>
+                      </span>
+                    )}
+                    {m.costoUsd !== undefined && (
+                      <span style={{ color: '#059669', fontWeight: 700 }}>
+                        💰 ${m.costoUsd < 0.0001 ? m.costoUsd.toFixed(6) : m.costoUsd.toFixed(4)} USD
+                      </span>
+                    )}
+                    {m.modelo && (
+                      <span style={{
+                        backgroundColor: '#E0E7FF',
+                        color: '#3730A3',
+                        padding: '1px 6px',
+                        fontWeight: 700,
+                        fontSize: '0.63rem',
+                      }}>
+                        🤖 {m.modelo}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -242,8 +354,8 @@ export const JoseAssistantDrawer: React.FC<JoseAssistantDrawerProps> = ({
               fontFamily: 'var(--font-mono)',
               fontSize: '0.8rem'
             }}>
-              <Loader2 size={16} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
-              Consultando documentos RAG indexados...
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              Generando respuesta en tiempo real (SSE)...
             </div>
           )}
         </div>
